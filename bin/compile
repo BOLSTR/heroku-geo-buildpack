@@ -125,4 +125,5 @@ set-default-env PATH "$APP_VENDOR/bin"
 
 echo "-----> Vendoring geo libraries done"
 echo "------> DU"
-du -sk $APP_VENDOR/*
+du -sk $BUILD_DIR/*
+echo "done"
