@@ -124,3 +124,5 @@ set-default-env CPATH "$APP_VENDOR/include"
 set-default-env PATH "$APP_VENDOR/bin"
 
 echo "-----> Vendoring geo libraries done"
+echo "------> DU"
+du -sk $APP_VENDOR/*
