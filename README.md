@@ -1,4 +1,5 @@
-### ATTENTION. Bolstr: This has the GDAL stuff removed, as we didn't need it and it was taking up too much room in our Heroku Slug.
+### ATTENTION. Bolstr: This has the GDAL stuff removed, as we didn't need it and it was taking up too much room in our Heroku Slug (pushing us over 300mb limit).
+###  We forked this from https://github.com/cyberdelia/heroku-geo-buildpack but still ran into problems, so we took the same approach that https://github.com/MattFenelon/heroku-buildpack-ruby-poppler does and build from source/cache for future builds via the buildpack process.
 
 Heroku buildpack: geo
 =====================
@@ -14,7 +15,7 @@ Usage
 Example usage:
 
 ```
-$ heroku buildpacks:set https://github.com/cyberdelia/heroku-geo-buildpack.git
+$ heroku buildpacks:set https://github.com/bolstr/heroku-geo-buildpack.git
 $ heroku buildpacks:add heroku/ruby
 ```
 
@@ -24,7 +25,7 @@ the language buildpacks.
 ```
 $ heroku buildpacks
 === sushi Buildpack URLs
-1. https://github.com/cyberdelia/heroku-geo-buildpack.git
+1. https://github.com/bolstr/heroku-geo-buildpack.git
 2. heroku/ruby
 ```
 
