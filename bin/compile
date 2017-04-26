@@ -22,14 +22,16 @@ BUILDPACK_DIR=`cd $(dirname $0); cd ..; pwd`
 WORKING_DIR=$BUILDPACK_DIR/tmp/
 
 GEOS_VERSION=3.6.1
-GEOS_SRC="http://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2"
+GEOS_TARBALL="geos-${GEOS_VERSION}.tar.bz2"
+GEOS_SRC="http://download.osgeo.org/geos/${GEOS_TARBALL}"
 GEOS_PRECOMPILED_PACKAGE_FILENAME="geos-${GEOS_VERSION}-compiled.tar.gz"
 GEOS_CACHED_PRECOMPILED_PACKAGE_DIR=$CACHE_DIR/vendor/geos
 GEOS_CACHED_PRECOMPILED_PACKAGE_PATH=$GEOS_CACHED_PRECOMPILED_PACKAGE_DIR/$GEOS_PRECOMPILED_PACKAGE_FILENAME
 GEOS_TARGET_DIR=$BUILD_DIR/vendor/geos/#{GEOS_VERSION}
 
 PROJ_VERSION=4.9.3
-PROJ_SRC="http://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz"
+PROJ_TARBALL="proj-${PROJ_VERSION}.tar.gz"
+PROJ_SRC="http://download.osgeo.org/proj/${PROJ_TARBALL}"
 PROJ_PRECOMPILED_PACKAGE_FILENAME="proj-${PROJ_VERSION}-compiled.tar.gz"
 PROJ_CACHED_PRECOMPILED_PACKAGE_DIR=$CACHE_DIR/vendor/proj
 PROJ_CACHED_PRECOMPILED_PACKAGE_PATH=$PROJ_CACHED_PRECOMPILED_PACKAGE_DIR/$PROJ_PRECOMPILED_PACKAGE_FILENAME
@@ -69,7 +71,7 @@ if [ -f $GEOS_CACHED_PRECOMPILED_PACKAGE_PATH ]; then
 else
   topic "Downloading geos-${GEOS_VERSION} source"
   wget --no-verbose --no-clobber $GEOS_SRC | indent
-  tar -xf $GEOS_SRC --skip-old-files | indent
+  tar -xf $GEOS_TARBALL --skip-old-files | indent
 
   topic "Building geos-${GEOS_VERSION}"
   cd geos-${GEOS_VERSION}
@@ -111,7 +113,7 @@ if [ -f $PROJ_CACHED_PRECOMPILED_PACKAGE_PATH ]; then
 else
   topic "Downloading proj-${PROJ_VERSION} source"
   wget --no-verbose --no-clobber $PROJ_SRC | indent
-  tar -xf $PROJ_SRC --skip-old-files | indent
+  tar -xf $PROJ_TARBALL --skip-old-files | indent
 
   topic "Building proj-${PROJ_VERSION}"
   cd proj-${PROJ_VERSION}
