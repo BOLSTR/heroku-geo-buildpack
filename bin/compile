@@ -68,6 +68,8 @@ topic "compiling geos"
 if [ -f $GEOS_CACHED_PRECOMPILED_PACKAGE_PATH ]; then
   topic "Using geos-${GEOS_VERSION}"
   tar -xf "$GEOS_CACHED_PRECOMPILED_PACKAGE_PATH" --skip-old-files -C $GEOS_TARGET_DIR | indent
+  # don't need the debugging symbols
+  strip $GEOS_TARGET_DIR/*/** 2> /dev/null | indent
 else
   topic "Downloading geos-${GEOS_VERSION} source"
   wget --no-verbose --no-clobber $GEOS_SRC | indent
@@ -110,6 +112,7 @@ topic "compiling proj"
 if [ -f $PROJ_CACHED_PRECOMPILED_PACKAGE_PATH ]; then
   topic "Using proj-${PROJ_VERSION}"
   tar -xf "$PROJ_CACHED_PRECOMPILED_PACKAGE_PATH" --skip-old-files -C $PROJ_TARGET_DIR | indent
+  strip $PROJ_TARGET_DIR/*/** 2> /dev/null | indent
 else
   topic "Downloading proj-${PROJ_VERSION} source"
   wget --no-verbose --no-clobber $PROJ_SRC | indent
