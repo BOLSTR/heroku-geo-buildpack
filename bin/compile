@@ -63,9 +63,9 @@ mkdir -p $PROJ_CACHED_PRECOMPILED_PACKAGE_DIR | indent
 cd $WORKING_DIR
 topic "compiling geos"
 
-if [ -f $CACHED_PRECOMPILED_PACKAGE_PATH ]; then
-  topic "Using geos-${POPPLER_VERSION}"
-  tar -xf "$GEOS_CACHED_PRECOMPILED_PACKAGE_PATH" --skip-old-files -C $TARGET_DIR | indent
+if [ -f $GEOS_CACHED_PRECOMPILED_PACKAGE_PATH ]; then
+  topic "Using geos-${GEOS_VERSION}"
+  tar -xf "$GEOS_CACHED_PRECOMPILED_PACKAGE_PATH" --skip-old-files -C $GEOS_TARGET_DIR | indent
 else
   topic "Downloading geos-${GEOS_VERSION} source"
   wget --no-verbose --no-clobber $GEOS_SRC | indent
@@ -73,7 +73,7 @@ else
 
   topic "Building geos-${GEOS_VERSION}"
   cd geos-${GEOS_VERSION}
-  ./configure --prefix="$TARGET_DIR" | indent
+  ./configure --prefix="$GEOS_TARGET_DIR" | indent
   make | indent
   make install | indent
   make clean | indent
@@ -84,14 +84,14 @@ else
   # Remove old cached precompiled packages
   rm -f *.* | indent
   # Package the compiled binaries
-  tar -zcvf "$PRECOMPILED_PACKAGE_FILENAME" -C $TARGET_DIR . | indent
+  tar -zcvf "$PRECOMPILED_PACKAGE_FILENAME" -C $GEOS_TARGET_DIR . | indent
 fi
 
 # Subsequent buildpacks need to know where the libraries are, based on the
 # $BUILDPATH, which is random, e.g. /tmp/build_1b673f33c9b7c4b2f548536d3b9d7e8e
 topic "Configuring environment for subsequent buildpacks"
 # Use echo to expand the variables that are escaped in the exports function.
-echo "$(exports "$TARGET_DIR")" > $BUILDPACK_DIR/export
+echo "$(exports "$GEOS_TARGET_DIR")" > $BUILDPACK_DIR/export
 
 # By the time the app is running, all the buildpacks output has been combined
 # into the $HOME folder.
@@ -105,9 +105,9 @@ echo "GEOS complete"
 cd $WORKING_DIR
 topic "compiling proj"
 
-if [ -f $CACHED_PRECOMPILED_PACKAGE_PATH ]; then
-  topic "Using proj-${POPPLER_VERSION}"
-  tar -xf "$PROJ_CACHED_PRECOMPILED_PACKAGE_PATH" --skip-old-files -C $TARGET_DIR | indent
+if [ -f $PROJ_CACHED_PRECOMPILED_PACKAGE_PATH ]; then
+  topic "Using proj-${PROJ_VERSION}"
+  tar -xf "$PROJ_CACHED_PRECOMPILED_PACKAGE_PATH" --skip-old-files -C $PROJ_TARGET_DIR | indent
 else
   topic "Downloading proj-${PROJ_VERSION} source"
   wget --no-verbose --no-clobber $PROJ_SRC | indent
@@ -115,7 +115,7 @@ else
 
   topic "Building proj-${PROJ_VERSION}"
   cd proj-${PROJ_VERSION}
-  ./configure --prefix="$TARGET_DIR" | indent
+  ./configure --prefix="$PROJ_TARGET_DIR" | indent
   make | indent
   make install | indent
   make clean | indent
@@ -126,14 +126,14 @@ else
   # Remove old cached precompiled packages
   rm -f *.* | indent
   # Package the compiled binaries
-  tar -zcvf "$PRECOMPILED_PACKAGE_FILENAME" -C $TARGET_DIR . | indent
+  tar -zcvf "$PRECOMPILED_PACKAGE_FILENAME" -C $PROJ_TARGET_DIR . | indent
 fi
 
 # Subsequent buildpacks need to know where the libraries are, based on the
 # $BUILDPATH, which is random, e.g. /tmp/build_1b673f33c9b7c4b2f548536d3b9d7e8e
 topic "Configuring environment for subsequent buildpacks"
 # Use echo to expand the variables that are escaped in the exports function.
-echo "$(exports "$TARGET_DIR")" > $BUILDPACK_DIR/export
+echo "$(exports "$PROJ_TARGET_DIR")" >> $BUILDPACK_DIR/export
 
 # By the time the app is running, all the buildpacks output has been combined
 # into the $HOME folder.
