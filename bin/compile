@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
-# bin/compile <build-dir> <cache-dir>
+# bin/compile <build-dir> <cache-dir> <env-dir>
 
-# Fail fast
-set -e
+# fail fast
+set -o errexit    # always exit on error
+set -o pipefail   # don't ignore exit codes when piping output
+
+# Enable extended globbing
+shopt -s extglob
 
 # Debug
 # set -x
@@ -10,109 +14,127 @@ set -e
 # Clean up leaking environment
 unset GIT_DIR
 
-# Configuration
-S3_BUCKET=${HEROKU_GEO_BUILDBACK_S3_BUCKET:-"cyberdelia-geo-buildpack"}
-
-# Parameters
 BUILD_DIR=$1
-CACHE_DIR="${2}/${STACK}"
+CACHE_DIR=$2
+ENV_DIR=$3
+BUILDPACK_DIR=`cd $(dirname $0); cd ..; pwd`
 
-# Setup profile file
-PROFILE_PATH="$BUILD_DIR/.profile.d/geo.sh"
-mkdir -p $(dirname $PROFILE_PATH)
+WORKING_DIR=$BUILDPACK_DIR/tmp/
 
-# Functions
+GEOS_VERSION=3.6.1
+GEOS_SRC="http://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2"
+GEOS_PRECOMPILED_PACKAGE_FILENAME="geos-${GEOS_VERSION}-compiled.tar.gz"
+CACHED_PRECOMPILED_PACKAGE_DIR=$CACHE_DIR/vendor/geos
+GEOS_CACHED_PRECOMPILED_PACKAGE_PATH=$GEOS_CACHED_PRECOMPILED_PACKAGE_DIR/$GEOS_PRECOMPILED_PACKAGE_FILENAME
+GEOS_TARGET_DIR=$BUILD_DIR/vendor/geos/#{GEOS_VERSION}
+
+PROJ_VERSION=4.9.3
+PROJ_SRC="http://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz"
+PROJ_PRECOMPILED_PACKAGE_FILENAME="proj-${PROJ_VERSION}-compiled.tar.gz"
+CACHED_PRECOMPILED_PACKAGE_DIR=$CACHE_DIR/vendor/proj
+PROJ_CACHED_PRECOMPILED_PACKAGE_PATH=$PROJ_CACHED_PRECOMPILED_PACKAGE_DIR/$PROJ_PRECOMPILED_PACKAGE_FILENAME
+PROJ_TARGET_DIR=$BUILD_DIR/vendor/proj/#{PROJ_VERSION}
+
 function indent() {
-  c='s/^/       /'
-  case $(uname) in
-    Darwin) sed -l "$c";;
-    *)      sed -u "$c";;
-  esac
+  sed -u 's/^/       /'
 }
 
-function manifest_version() {
-  curl "http://${S3_BUCKET}.s3.amazonaws.com/${STACK}/manifest.${1}" -s -o - | head -n 1
+function topic() {
+  echo "-----> $*"
 }
 
-function download_package() {
-  name="$1"
-  version="$2"
-  location="$3"
+function exports() {
+  local prefix_dir=$1
 
-  mkdir -p $location
-  package="https://${S3_BUCKET}.s3.amazonaws.com/${STACK}/$name-$version.tgz"
-  curl $package -s -o - | tar xzf - -C $location
+  cat <<SHELL
+  export PKG_CONFIG_PATH="$prefix_dir/lib/pkgconfig:\$PKG_CONFIG_PATH"
+  export LD_LIBRARY_PATH="$prefix_dir/lib:\$LD_LIBRARY_PATH"
+SHELL
 }
 
-function set-env (){
-  echo "export $1=$2" >> $PROFILE_PATH
-}
+mkdir -p $WORKING_DIR | indent
+mkdir -p $GEOS_TARGET_DIR | indent
+mkdir -p $GEOS_CACHED_PRECOMPILED_PACKAGE_DIR | indent
 
-function set-default-env (){
-  echo "export $1=\${$1:-$2}" >> $PROFILE_PATH
-}
+cd $WORKING_DIR
+topic "compiling geos"
 
-# Retrieve versions
-GEOS_VERSION=$(manifest_version "geos")
-PROJ_VERSION=$(manifest_version "proj")
+if [ -f $CACHED_PRECOMPILED_PACKAGE_PATH ]; then
+  topic "Using geos-${POPPLER_VERSION}"
+  tar -xf "$GEOS_CACHED_PRECOMPILED_PACKAGE_PATH" --skip-old-files -C $TARGET_DIR | indent
+else
+  topic "Downloading geos-${GEOS_VERSION} source"
+  wget --no-verbose --no-clobber $GEOS_SRC | indent
+  tar -xf $GEOS_SRC --skip-old-files | indent
 
-# Display some information
-echo "Using geos version: ${GEOS_VERSION}" | indent
-echo "Using proj version: ${PROJ_VERSION}" | indent
+  topic "Building geos-${GEOS_VERSION}"
+  cd geos-${GEOS_VERSION}
+  ./configure --prefix="$TARGET_DIR" | indent
+  make | indent
+  make install | indent
+  make clean | indent
+  make distclean | indent
 
-# Vendor directories
-VENDORED_GEOS="vendor/geos/$GEOS_VERSION"
-VENDORED_PROJ="vendor/proj/$PROJ_VERSION"
-
-# Make sure cache dir exists
-mkdir -p $CACHE_DIR
-
-if [ ! -d $CACHE_DIR/$VENDORED_GEOS ]; then
-  echo "-----> Fetching and vendoring geos"
-  rm -rf "$CACHE_DIR/vendor/geos"
-  download_package "geos" "${GEOS_VERSION}" "${CACHE_DIR}/${VENDORED_GEOS}"
+  topic "Caching precompiled package"
+  cd $GEOS_CACHED_PRECOMPILED_PACKAGE_DIR
+  # Remove old cached precompiled packages
+  rm -f *.* | indent
+  # Package the compiled binaries
+  tar -zcvf "$PRECOMPILED_PACKAGE_FILENAME" -C $TARGET_DIR . | indent
 fi
 
-if [ ! -d $CACHE_DIR/$VENDORED_PROJ ]; then
-  echo "-----> Fetching and vendoring proj"
-  rm -rf "$CACHE_DIR/vendor/proj"
-  download_package "proj" "${PROJ_VERSION}" "${CACHE_DIR}/${VENDORED_PROJ}"
+# Subsequent buildpacks need to know where the libraries are, based on the
+# $BUILDPATH, which is random, e.g. /tmp/build_1b673f33c9b7c4b2f548536d3b9d7e8e
+topic "Configuring environment for subsequent buildpacks"
+# Use echo to expand the variables that are escaped in the exports function.
+echo "$(exports "$TARGET_DIR")" > $BUILDPACK_DIR/export
+
+# By the time the app is running, all the buildpacks output has been combined
+# into the $HOME folder.
+topic "Configure application environment"
+mkdir -p $BUILD_DIR/.profile.d
+exports "\$HOME/vendor/geos" > $BUILD_DIR/.profile.d/000_geos.sh
+
+echo "GEOS complete"
+
+
+cd $WORKING_DIR
+topic "compiling proj"
+
+if [ -f $CACHED_PRECOMPILED_PACKAGE_PATH ]; then
+  topic "Using proj-${POPPLER_VERSION}"
+  tar -xf "$PROJ_CACHED_PRECOMPILED_PACKAGE_PATH" --skip-old-files -C $TARGET_DIR | indent
+else
+  topic "Downloading proj-${PROJ_VERSION} source"
+  wget --no-verbose --no-clobber $PROJ_SRC | indent
+  tar -xf $PROJ_SRC --skip-old-files | indent
+
+  topic "Building proj-${PROJ_VERSION}"
+  cd proj-${PROJ_VERSION}
+  ./configure --prefix="$TARGET_DIR" | indent
+  make | indent
+  make install | indent
+  make clean | indent
+  make distclean | indent
+
+  topic "Caching precompiled package"
+  cd $PROJ_CACHED_PRECOMPILED_PACKAGE_DIR
+  # Remove old cached precompiled packages
+  rm -f *.* | indent
+  # Package the compiled binaries
+  tar -zcvf "$PRECOMPILED_PACKAGE_FILENAME" -C $TARGET_DIR . | indent
 fi
 
-TARGET_VENDOR_DIR=".heroku/vendor"
-# Copy artifacts out of cache if exists.
-for dir in $VENDORED_GEOS $VENDORED_PROJ; do
-  mkdir -p $BUILD_DIR/$TARGET_VENDOR_DIR
-  cp -r $CACHE_DIR/$dir/* $BUILD_DIR/$TARGET_VENDOR_DIR &> /dev/null || true
-done
+# Subsequent buildpacks need to know where the libraries are, based on the
+# $BUILDPATH, which is random, e.g. /tmp/build_1b673f33c9b7c4b2f548536d3b9d7e8e
+topic "Configuring environment for subsequent buildpacks"
+# Use echo to expand the variables that are escaped in the exports function.
+echo "$(exports "$TARGET_DIR")" > $BUILDPACK_DIR/export
 
-# App directories
-APP_VENDOR="/app/$TARGET_VENDOR_DIR"
+# By the time the app is running, all the buildpacks output has been combined
+# into the $HOME folder.
+topic "Configure application environment"
+mkdir -p $BUILD_DIR/.profile.d
+exports "\$HOME/vendor/proj" > $BUILD_DIR/.profile.d/000_proj.sh
 
-# Setup environment variables
-set-env GEOS_LIBRARY_PATH "$APP_VENDOR/lib"
-set-env PROJ4_LIBRARY_PATH "$APP_VENDOR/lib"
-
-# Bundle workaround
-mkdir -p $BUILD_DIR/.bundle
-if [ -f $CACHE_DIR/.bundle/config ]; then
-  rm $CACHE_DIR/.bundle/config
-fi
-echo "---
-BUNDLE_BUILD__RGEO: "--with-opt-dir=$BUILD_DIR/$TARGET_VENDOR_DIR --with-geos-config=$BUILD_DIR/$TARGET_VENDOR_DIR/bin/geos-config"
-BUNDLE_FROZEN: '1'
-BUNDLE_PATH: vendor/bundle
-BUNDLE_BIN: vendor/bundle/bin
-BUNDLE_WITHOUT: development:test
-BUNDLE_DISABLE_SHARED_GEMS: '1'
-" > $BUILD_DIR/.bundle/config
-
-set-default-env LIBRARY_PATH "$APP_VENDOR/lib"
-set-default-env LD_LIBRARY_PATH "$APP_VENDOR/lib"
-set-default-env CPATH "$APP_VENDOR/include"
-set-default-env PATH "$APP_VENDOR/bin"
-
-echo "-----> Vendoring geo libraries done"
-echo "------> DU"
-du -sk $BUILD_DIR/*
-echo "done"
+echo "PROJ complete"
