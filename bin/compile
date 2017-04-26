@@ -68,7 +68,7 @@ topic "compiling geos"
 if [ -f $GEOS_CACHED_PRECOMPILED_PACKAGE_PATH ]; then
   topic "Using geos-${GEOS_VERSION}"
   tar -xf "$GEOS_CACHED_PRECOMPILED_PACKAGE_PATH" --skip-old-files -C $GEOS_TARGET_DIR | indent
-  strip $GEOS_TARGET_DIR/*/** 2> /dev/null | indent
+  strip $GEOS_TARGET_DIR/*/** 2> /dev/null | indent || echo ""
 else
   topic "Downloading geos-${GEOS_VERSION} source"
   wget --no-verbose --no-clobber $GEOS_SRC | indent
@@ -87,7 +87,7 @@ else
   # Remove old cached precompiled packages
   rm -f *.* | indent
   # don't need the debugging symbols
-  strip $GEOS_TARGET_DIR/*/** 2> /dev/null | indent
+  strip $GEOS_TARGET_DIR/*/** 2> /dev/null | indent || echo ""
   # Package the compiled binaries
   tar -zcvf "$GEOS_PRECOMPILED_PACKAGE_FILENAME" -C $GEOS_TARGET_DIR . | indent
 fi
@@ -113,7 +113,7 @@ topic "compiling proj"
 if [ -f $PROJ_CACHED_PRECOMPILED_PACKAGE_PATH ]; then
   topic "Using proj-${PROJ_VERSION}"
   tar -xf "$PROJ_CACHED_PRECOMPILED_PACKAGE_PATH" --skip-old-files -C $PROJ_TARGET_DIR | indent
-  strip $PROJ_TARGET_DIR/*/** 2> /dev/null | indent
+  strip $PROJ_TARGET_DIR/*/** 2> /dev/null | indent || echo ""
 else
   topic "Downloading proj-${PROJ_VERSION} source"
   wget --no-verbose --no-clobber $PROJ_SRC | indent
@@ -132,7 +132,7 @@ else
   # Remove old cached precompiled packages
   rm -f *.* | indent
   # Package the compiled binaries
-  strip $PROJ_TARGET_DIR/*/** 2> /dev/null | indent
+  strip $PROJ_TARGET_DIR/*/** 2> /dev/null | indent || echo ""
   tar -zcvf "$PROJ_PRECOMPILED_PACKAGE_FILENAME" -C $PROJ_TARGET_DIR . | indent
 fi
 
