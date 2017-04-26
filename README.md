@@ -1,3 +1,5 @@
+### ATTENTION. Bolstr: This has the GDAL stuff removed, as we didn't need it and it was taking up too much room in our Heroku Slug.
+
 Heroku buildpack: geo
 =====================
 
@@ -28,14 +30,6 @@ $ heroku buildpacks
 
 Testing
 -------
-
-For Geo Django:
-
-```python
->>> from django.contrib.gis import gdal
->>> gdal.HAS_GDAL
-True
-```
 
 For rgeo:
 
