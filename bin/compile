@@ -68,7 +68,6 @@ topic "compiling geos"
 if [ -f $GEOS_CACHED_PRECOMPILED_PACKAGE_PATH ]; then
   topic "Using geos-${GEOS_VERSION}"
   tar -xf "$GEOS_CACHED_PRECOMPILED_PACKAGE_PATH" --skip-old-files -C $GEOS_TARGET_DIR | indent
-  # don't need the debugging symbols
   strip $GEOS_TARGET_DIR/*/** 2> /dev/null | indent
 else
   topic "Downloading geos-${GEOS_VERSION} source"
@@ -87,6 +86,8 @@ else
   cd $GEOS_CACHED_PRECOMPILED_PACKAGE_DIR
   # Remove old cached precompiled packages
   rm -f *.* | indent
+  # don't need the debugging symbols
+  strip $GEOS_TARGET_DIR/*/** 2> /dev/null | indent
   # Package the compiled binaries
   tar -zcvf "$GEOS_PRECOMPILED_PACKAGE_FILENAME" -C $GEOS_TARGET_DIR . | indent
 fi
@@ -131,6 +132,7 @@ else
   # Remove old cached precompiled packages
   rm -f *.* | indent
   # Package the compiled binaries
+  strip $PROJ_TARGET_DIR/*/** 2> /dev/null | indent
   tar -zcvf "$PROJ_PRECOMPILED_PACKAGE_FILENAME" -C $PROJ_TARGET_DIR . | indent
 fi
 
