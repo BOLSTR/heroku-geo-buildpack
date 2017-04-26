@@ -24,18 +24,18 @@ WORKING_DIR=$BUILDPACK_DIR/tmp/
 GEOS_VERSION=3.6.1
 GEOS_TARBALL="geos-${GEOS_VERSION}.tar.bz2"
 GEOS_SRC="http://download.osgeo.org/geos/${GEOS_TARBALL}"
+GEOS_TARGET_DIR=$BUILD_DIR/vendor/geos/
 GEOS_PRECOMPILED_PACKAGE_FILENAME="geos-${GEOS_VERSION}-compiled.tar.gz"
 GEOS_CACHED_PRECOMPILED_PACKAGE_DIR=$CACHE_DIR/vendor/geos
 GEOS_CACHED_PRECOMPILED_PACKAGE_PATH=$GEOS_CACHED_PRECOMPILED_PACKAGE_DIR/$GEOS_PRECOMPILED_PACKAGE_FILENAME
-GEOS_TARGET_DIR=$BUILD_DIR/vendor/geos/${GEOS_VERSION}
 
 PROJ_VERSION=4.9.3
 PROJ_TARBALL="proj-${PROJ_VERSION}.tar.gz"
 PROJ_SRC="http://download.osgeo.org/proj/${PROJ_TARBALL}"
+PROJ_TARGET_DIR=$BUILD_DIR/vendor/proj/
 PROJ_PRECOMPILED_PACKAGE_FILENAME="proj-${PROJ_VERSION}-compiled.tar.gz"
 PROJ_CACHED_PRECOMPILED_PACKAGE_DIR=$CACHE_DIR/vendor/proj
 PROJ_CACHED_PRECOMPILED_PACKAGE_PATH=$PROJ_CACHED_PRECOMPILED_PACKAGE_DIR/$PROJ_PRECOMPILED_PACKAGE_FILENAME
-PROJ_TARGET_DIR=$BUILD_DIR/vendor/proj/${PROJ_VERSION}
 
 function indent() {
   sed -u 's/^/       /'
@@ -81,7 +81,7 @@ else
   make clean | indent
   make distclean | indent
 
-  topic "Caching precompiled package"
+  topic "Caching precompiled package into $GEOS_CACHED_PRECOMPILED_PACKAGE_DIR"
   cd $GEOS_CACHED_PRECOMPILED_PACKAGE_DIR
   # Remove old cached precompiled packages
   rm -f *.* | indent
